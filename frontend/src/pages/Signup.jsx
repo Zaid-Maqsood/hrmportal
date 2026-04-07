@@ -5,12 +5,11 @@ import { Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import Select from '../components/ui/Select';
 
 export default function Signup() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'EMPLOYEE' });
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,8 +19,8 @@ export default function Signup() {
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
-      const user = await register(form.name, form.email, form.password, form.role);
-      navigate(user.role === 'EMPLOYEE' ? '/portal' : '/dashboard');
+      await register(form.name, form.email, form.password);
+      navigate('/portal');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -59,10 +58,6 @@ export default function Signup() {
               onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             <Input label="Password" type="password" placeholder="••••••••" value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-            <Select label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-              <option value="EMPLOYEE">Employee</option>
-              <option value="ADMIN">Admin / Recruiter</option>
-            </Select>
 
             <Button type="submit" className="w-full" loading={loading}>
               Create account

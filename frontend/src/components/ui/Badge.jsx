@@ -22,7 +22,9 @@ const STATUS_STYLES = {
 };
 
 const LABELS = {
+  TODO: 'To Do',
   IN_PROGRESS: 'In Progress',
+  DONE: 'Done',
 };
 
 export default function Badge({ status, className = '' }) {

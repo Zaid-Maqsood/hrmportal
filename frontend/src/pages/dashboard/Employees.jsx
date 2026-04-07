@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, Mail, Phone, Building2, Briefcase, Pencil } from 'lucide-react';
+import { User, Mail, Phone, Building2, Briefcase, Pencil, Search } from 'lucide-react';
 import { getEmployees, updateEmployee } from '../../api/employees.api';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
@@ -12,6 +12,7 @@ import { CardSkeleton } from '../../components/ui/Skeleton';
 
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
@@ -36,19 +37,42 @@ export default function Employees() {
     finally { setSaving(false); }
   };
 
+  const filtered = employees.filter((emp) => {
+    const q = search.toLowerCase();
+    return (
+      emp.name.toLowerCase().includes(q) ||
+      emp.email.toLowerCase().includes(q) ||
+      emp.employeeProfile?.department?.toLowerCase().includes(q) ||
+      emp.employeeProfile?.position?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div>
       <PageHeader title="Employees" subtitle="View and manage your team members" />
+
+      <div className="mb-4">
+        <div className="relative max-w-xs">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search employees..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 text-[#1E3A8A] bg-white focus:outline-none focus:ring-2 focus:ring-[#1E40AF] transition-colors duration-200"
+          />
+        </div>
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1,2,3,4,5,6].map(i => <CardSkeleton key={i} />)}
         </div>
-      ) : employees.length === 0 ? (
-        <EmptyState title="No employees found" description="Employees will appear here once they create accounts." />
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No employees found" description={search ? 'No employees match your search.' : 'Employees will appear here once they create accounts.'} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {employees.map((emp) => (
+          {filtered.map((emp) => (
             <Card key={emp.id} className="relative hover:border-[#BFDBFE] transition-colors duration-200">
               <button onClick={() => openEdit(emp)}
                 className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-[#EFF6FF] text-slate-400 hover:text-[#1E40AF] transition-colors duration-200 cursor-pointer"

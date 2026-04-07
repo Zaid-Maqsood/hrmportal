@@ -9,7 +9,7 @@ const signToken = (user) =>
 
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required' });
     }
@@ -18,7 +18,7 @@ exports.register = async (req, res, next) => {
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hashed, role: role || 'EMPLOYEE' },
+      data: { name, email, password: hashed, role: 'EMPLOYEE' },
     });
     res.status(201).json({ token: signToken(user), user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {

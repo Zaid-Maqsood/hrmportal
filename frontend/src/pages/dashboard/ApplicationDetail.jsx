@@ -3,10 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Calendar, User } from 'lucide-react';
 import { formatDate, formatDateTime } from '../../utils/date';
 import { getApplication, updateApplicationStatus } from '../../api/applications.api';
+import { createInterview } from '../../api/interviews.api';
+import { getEmployees } from '../../api/employees.api';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
+import Input from '../../components/ui/Input';
+import Textarea from '../../components/ui/Textarea';
 import { Skeleton } from '../../components/ui/Skeleton';
 
 const STATUSES = ['APPLIED', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'HIRED'];
@@ -16,14 +20,44 @@ export default function ApplicationDetail() {
   const navigate = useNavigate();
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState([]);
+  const [scheduleForm, setScheduleForm] = useState({ scheduledAt: '', interviewerId: '', notes: '' });
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState('');
 
   useEffect(() => {
-    getApplication(id).then((r) => setApp(r.data)).finally(() => setLoading(false));
+    Promise.all([
+      getApplication(id),
+      getEmployees(),
+    ]).then(([appRes, empRes]) => {
+      setApp(appRes.data);
+      setEmployees(empRes.data);
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const handleStatusChange = async (status) => {
     await updateApplicationStatus(id, status);
     setApp((prev) => ({ ...prev, status }));
+  };
+
+  const handleScheduleInterview = async (e) => {
+    e.preventDefault();
+    setScheduleError('');
+    setScheduling(true);
+    try {
+      const payload = {
+        applicationId: Number(id),
+        scheduledAt: new Date(scheduleForm.scheduledAt).toISOString(),
+        interviewerId: Number(scheduleForm.interviewerId),
+        notes: scheduleForm.notes,
+      };
+      const res = await createInterview(payload);
+      setApp((prev) => ({ ...prev, interview: res.data, status: 'INTERVIEW' }));
+    } catch (err) {
+      setScheduleError(err.response?.data?.message || 'Failed to schedule interview');
+    } finally {
+      setScheduling(false);
+    }
   };
 
   if (loading) return (
@@ -86,7 +120,7 @@ export default function ApplicationDetail() {
           </Select>
         </Card>
 
-        {app.interview && (
+        {app.interview ? (
           <Card>
             <h3 className="font-semibold text-[#1E3A8A] mb-4 flex items-center gap-2"><Calendar size={16} /> Interview</h3>
             <dl className="space-y-3 text-sm">
@@ -111,6 +145,43 @@ export default function ApplicationDetail() {
                 </div>
               )}
             </dl>
+          </Card>
+        ) : (
+          <Card>
+            <h3 className="font-semibold text-[#1E3A8A] mb-4 flex items-center gap-2"><Calendar size={16} /> Schedule Interview</h3>
+            {scheduleError && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">{scheduleError}</div>
+            )}
+            <form onSubmit={handleScheduleInterview} className="space-y-4">
+              <Input
+                label="Date & Time"
+                type="datetime-local"
+                value={scheduleForm.scheduledAt}
+                onChange={(e) => setScheduleForm({ ...scheduleForm, scheduledAt: e.target.value })}
+                required
+              />
+              <Select
+                label="Interviewer"
+                value={scheduleForm.interviewerId}
+                onChange={(e) => setScheduleForm({ ...scheduleForm, interviewerId: e.target.value })}
+                required
+              >
+                <option value="">Select interviewer</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </Select>
+              <Textarea
+                label="Notes (optional)"
+                placeholder="Interview focus areas..."
+                value={scheduleForm.notes}
+                onChange={(e) => setScheduleForm({ ...scheduleForm, notes: e.target.value })}
+                rows={3}
+              />
+              <div className="flex justify-end">
+                <Button type="submit" loading={scheduling}>Schedule Interview</Button>
+              </div>
+            </form>
           </Card>
         )}
       </div>

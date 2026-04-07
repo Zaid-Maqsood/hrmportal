@@ -33,8 +33,10 @@ export default function Interviews() {
       getApplications({ status: 'SHORTLISTED' }),
       getEmployees(),
     ]).then(([i, a, e]) => {
+      const scheduledAppIds = new Set(i.data.map((iv) => iv.applicationId));
       setInterviews(i.data);
-      setApplications(a.data);
+      // Exclude applications that already have an interview scheduled
+      setApplications(a.data.filter((app) => !scheduledAppIds.has(app.id)));
       setEmployees(e.data);
     }).finally(() => setLoading(false));
   };
@@ -44,9 +46,12 @@ export default function Interviews() {
   const openCreate = () => { setForm(EMPTY); setSelected(null); setModal('create'); };
   const openEdit = (iv) => {
     setSelected(iv);
+    // Convert UTC to local time for the datetime-local input
+    const d = new Date(iv.scheduledAt);
+    const localISO = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     setForm({
       applicationId: iv.applicationId,
-      scheduledAt: new Date(iv.scheduledAt).toISOString().slice(0, 16),
+      scheduledAt: localISO,
       interviewerId: iv.interviewerId,
       notes: iv.notes || '',
       feedback: iv.feedback || '',
@@ -59,8 +64,10 @@ export default function Interviews() {
     e.preventDefault();
     setSaving(true);
     try {
-      if (modal === 'create') await createInterview(form);
-      else await updateInterview(selected.id, form);
+      // Convert datetime-local (local time) to UTC ISO string before sending
+      const payload = { ...form, scheduledAt: new Date(form.scheduledAt).toISOString() };
+      if (modal === 'create') await createInterview(payload);
+      else await updateInterview(selected.id, payload);
       load(); closeModal();
     } finally { setSaving(false); }
   };
