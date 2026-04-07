@@ -14,8 +14,13 @@ const connectionString = rawUrl
 const pool = new Pool({
   connectionString,
   max: 5,
-  options: '-csearch_path=hrm', // force schema at connection level
   ...(isProd && { ssl: { rejectUnauthorized: false } }),
+});
+
+// Force hrm schema on every new connection — shared DO DB has multiple schemas
+// with User tables; wrong search_path = wrong password hash = 401 on login.
+pool.on('connect', (client) => {
+  client.query('SET search_path TO hrm');
 });
 
 const adapter = new PrismaPg(pool, { schema: 'hrm' });
