@@ -4,7 +4,11 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isProduction = (process.env.DATABASE_URL || '').includes('ondigitalocean.com');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ...(isProduction && { ssl: { rejectUnauthorized: false } }),
+});
 const adapter = new PrismaPg(pool, { schema: 'hrm' });
 const prisma = new PrismaClient({ adapter });
 
