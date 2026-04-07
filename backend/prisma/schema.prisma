@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  CANDIDATE
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  INTERVIEW
+  REJECTED
+  HIRED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(EMPLOYEE)
+  createdAt DateTime @default(now())
+
+  jobs             Job[]
+  assignedTasks    Task[]          @relation("AssignedTasks")
+  createdTasks     Task[]          @relation("CreatedTasks")
+  interviews       Interview[]
+  employeeProfile  EmployeeProfile?
+}
+
+model Job {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  location    String
+  type        String    // full-time, part-time, contract, remote
+  status      JobStatus @default(OPEN)
+  createdAt   DateTime  @default(now())
+
+  postedById  Int
+  postedBy    User         @relation(fields: [postedById], references: [id])
+  applications Application[]
+}
+
+model Application {
+  id             Int               @id @default(autoincrement())
+  candidateName  String
+  candidateEmail String
+  resumeUrl      String?
+  status         ApplicationStatus @default(APPLIED)
+  appliedAt      DateTime          @default(now())
+
+  jobId      Int
+  job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  interview  Interview?
+}
+
+model Interview {
+  id            Int      @id @default(autoincrement())
+  scheduledAt   DateTime
+  feedback      String?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  applicationId Int         @unique
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  interviewerId Int
+  interviewer   User @relation(fields: [interviewerId], references: [id])
+}
+
+model EmployeeProfile {
+  id         Int      @id @default(autoincrement())
+  department String
+  position   String
+  phone      String?
+  joinedAt   DateTime @default(now())
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+
+  assignedToId Int?
+  assignedTo   User? @relation("AssignedTasks", fields: [assignedToId], references: [id])
+
+  createdById Int
+  createdBy   User @relation("CreatedTasks", fields: [createdById], references: [id])
+}
