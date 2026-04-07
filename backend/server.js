@@ -29,4 +29,10 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  const dbUrl = process.env.DATABASE_URL || '';
+  const dbHost = dbUrl.replace(/\/\/[^@]+@/, '//***@').split('?')[0];
+  console.log(`Server running on port ${PORT}`);
+  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`DB URL (masked): ${dbHost}`);
+});

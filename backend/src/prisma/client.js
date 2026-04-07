@@ -3,13 +3,13 @@ const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
 
 const rawUrl = process.env.DATABASE_URL || '';
-const isProduction = rawUrl.includes('ondigitalocean.com');
-// Strip sslmode from URL — pg lib treats sslmode=require as verify-full in newer versions,
-// which breaks with DO's self-signed cert chain. SSL is handled via the ssl option below.
+const isProd = process.env.NODE_ENV === 'production' || rawUrl.includes('ondigitalocean.com');
+// Strip sslmode — pg v8 treats sslmode=require as verify-full, breaking DO's self-signed cert.
 const connectionString = rawUrl.replace(/([?&])sslmode=[^&]*/g, '$1').replace(/[?&]$/, '');
+
 const pool = new Pool({
   connectionString,
-  ...(isProduction && { ssl: { rejectUnauthorized: false } }),
+  ...(isProd && { ssl: { rejectUnauthorized: false } }),
 });
 
 const adapter = new PrismaPg(pool, { schema: 'hrm' });
