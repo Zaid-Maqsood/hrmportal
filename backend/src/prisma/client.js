@@ -9,6 +9,7 @@ const connectionString = rawUrl.replace(/([?&])sslmode=[^&]*/g, '$1').replace(/[
 
 const pool = new Pool({
   connectionString,
+  max: 5,
   ...(isProd && { ssl: { rejectUnauthorized: false } }),
 });
 
