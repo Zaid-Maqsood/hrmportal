@@ -32,9 +32,11 @@ exports.login = async (req, res, next) => {
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    console.log('[login] email:', email, '| user found:', !!user);
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    console.log('[login] password match:', passwordMatch);
+    if (!passwordMatch) return res.status(401).json({ message: 'Invalid credentials' });
     res.json({ token: signToken(user), user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     next(err);
