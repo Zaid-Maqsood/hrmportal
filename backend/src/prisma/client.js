@@ -15,7 +15,7 @@ const connectionString = `${cleaned}${sep}options=-c+search_path%3Dhrm`;
 
 const pool = new Pool({
   connectionString,
-  max: 5,
+  max: 1,
   ...(isProd && { ssl: { rejectUnauthorized: false } }),
 });
 
