@@ -4,10 +4,18 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-const isProduction = (process.env.DATABASE_URL || '').includes('ondigitalocean.com');
+const rawUrl = process.env.DATABASE_URL || '';
+const isProd = rawUrl.includes('ondigitalocean.com');
+const cleaned = rawUrl
+  .replace(/([?&])sslmode=[^&]*/g, '$1')
+  .replace(/([?&])schema=[^&]*/g, '$1')
+  .replace(/[?&]$/, '');
+const sep = cleaned.includes('?') ? '&' : '?';
+const connectionString = `${cleaned}${sep}options=-c+search_path%3Dhrm`;
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ...(isProduction && { ssl: { rejectUnauthorized: false } }),
+  connectionString,
+  ...(isProd && { ssl: { rejectUnauthorized: false } }),
 });
 const adapter = new PrismaPg(pool, { schema: 'hrm' });
 const prisma = new PrismaClient({ adapter });
